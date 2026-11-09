@@ -3,3 +3,7 @@
 
 # Python 缓存
 __pycache__/
+
+# 本地记录
+/chat_history.md
+/git_log.txt
