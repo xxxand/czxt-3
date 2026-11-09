@@ -217,68 +217,11 @@ waitpid；直接从结果区排序并输出
 
 `make` 使用 `-Wall -Wextra`，没有任何警告，可执行文件和 `.o` 文件都生成在 `build/` 下：
 
-```
-rm -rf build
-mkdir -p build
-gcc -std=gnu11 -O2 -g -Wall -Wextra -pthread -c -o build/pipe_grep.o pipe_grep.c
-gcc -std=gnu11 -O2 -g -Wall -Wextra -pthread -c -o build/common.o common.c
-gcc -pthread -o build/pipe_grep build/pipe_grep.o build/common.o
-gcc -std=gnu11 -O2 -g -Wall -Wextra -pthread -c -o build/uds_grep.o uds_grep.c
-gcc -pthread -o build/uds_grep build/uds_grep.o build/common.o
-gcc -std=gnu11 -O2 -g -Wall -Wextra -pthread -c -o build/shm_grep.o shm_grep.c
-gcc -pthread -o build/shm_grep build/shm_grep.o build/common.o -lrt
--rwxr-xr-x 46048 build/pipe_grep
--rwxr-xr-x 60936 build/shm_grep
--rwxr-xr-x 46496 build/uds_grep
-```
+![make demo](image-1.png)
 
-终端演示（`$` 开头的行是输入的命令）：
+终端演示：
 
-```
-$ printf 'Hello World!\nHello worlds\nthe_world\nsay WORLD.\nworld2\nA world-wide web\nbefore: world\n' > /tmp/demo.txt
-$ ./build/pipe_grep /tmp/demo.txt world
-A world-wide web
-before: world
-Hello World!
-say WORLD.
-$ for p in pipe_grep uds_grep shm_grep; do ./build/$p /tmp/demo.txt world | md5sum; done
-6582d36b0253bcbe24535af911f70ee0  -
-6582d36b0253bcbe24535af911f70ee0  -
-6582d36b0253bcbe24535af911f70ee0  -
-
-$ ./build/pipe_grep ANNA_KARENINA.txt world | head -4
-  "He that is married careth for the things of the world, how he may
-  "I know more of the world than you do," she said. I know how men
-  "I lodge complaints? Not for anything in the world There's so much
-  "If the world disapproves, I don't care," said Vronsky; "but if my
-$ for p in pipe_grep uds_grep shm_grep; do ./build/$p ANNA_KARENINA.txt world | wc -l; done
-134
-134
-134
-$ ./build/uds_grep big.txt Holmes | wc -l
-446
-$ ./build/shm_grep big.txt the | wc -l
-52067
-
-$ diff <(./build/shm_grep big.txt the | LC_ALL=C sort) <(grep -iw the big.txt | LC_ALL=C sort) && echo 与 grep -iw 的结果一致
-与 grep -iw 的结果一致
-
-$ ./build/pipe_grep; echo "退出码=$?"
-usage: ./build/pipe_grep <file> <word>
-  print the lines of <file> that contain <word>, in alphabetical order
-退出码=2
-$ ./build/pipe_grep /nonexistent x; echo "退出码=$?"
-pipe_grep: cannot open '/nonexistent': No such file or directory
-退出码=1
-$ ./build/uds_grep . x; echo "退出码=$?"
-uds_grep: read: Is a directory
-退出码=1
-$ ./build/shm_grep . x; echo "退出码=$?"
-shm_grep: '.' is not a regular file
-退出码=1
-$ ./build/shm_grep /tmp/demo.txt nomatch; echo "无匹配时退出码=$?"
-无匹配时退出码=0
-```
+![terminal demo](image.png)
 
 从中可以看到：
 
@@ -291,42 +234,7 @@ $ ./build/shm_grep /tmp/demo.txt nomatch; echo "无匹配时退出码=$?"
 
 `make test` 运行 `tests/run_tests.py`：把三个程序的输出与 Python 参考实现逐字节比较，参考实现本身也与 `grep -iw` 对照。覆盖的内容有：题目中的例子、空文件、最后一行没有换行符、CRLF、含 NUL 字节和 UTF-8 的内容、3 MB 的超长行、30 万行全部命中（结果远大于管道和套接字的缓冲区）、200 个随机小文件（覆盖 `shm_grep` 的分段边界）、两个样例文件各 5 个单词、错误处理，以及 `/dev/shm` 中没有残留的共享内存对象。运行结果：
 
-```
-python3 tests/run_tests.py
-PASS  题目示例: 整词、不区分大小写、字母序
-PASS  单词参数大小写无关
-PASS  最后一行没有换行符
-PASS  CRLF 换行(\r 原样保留)
-PASS  空文件
-PASS  只有换行符
-PASS  没有匹配
-PASS  重复的行都保留
-PASS  含 NUL 字节和 UTF-8
-PASS  带标点的单词
-PASS  3MB 的超长行, 单词在行尾(无换行)
-PASS  3MB 的超长行, 单词被字母粘连
-PASS  长短不一的行, 数据块边界落在行中间
-PASS  30万行全部命中(结果远大于管道/套接字缓冲区)
-PASS  200 个随机小文件(覆盖 mapper 切分边界), 同时对照 grep -iw
-PASS  ANNA_KARENINA.txt  world  (134 行)
-PASS  ANNA_KARENINA.txt  Anna  (813 行)
-PASS  ANNA_KARENINA.txt  the  (13294 行)
-PASS  ANNA_KARENINA.txt  Holmes  (0 行)
-PASS  ANNA_KARENINA.txt  zzzzqq  (0 行)
-PASS  big.txt  world  (355 行)
-PASS  big.txt  Anna  (290 行)
-PASS  big.txt  the  (52067 行)
-PASS  big.txt  Holmes  (446 行)
-PASS  big.txt  zzzzqq  (0 行)
-PASS  缺少参数
-PASS  单词为空
-PASS  文件不存在
-PASS  参数是目录
-PASS  文件无读权限
-PASS  没有残留的共享内存对象
-
-31 项通过, 0 项失败
-```
+![test demo](image-2.png)
 
 ### 3.3 变异测试：测试集能否发现缺陷
 
@@ -464,53 +372,11 @@ big.txt 为 6488666 字节, 单词 the 的结果约 3.8 MB
 
 各组单次运行的标准差在 0.13–1.01 ms 之间，占中位数的 2.8%–7.5%；每组取了 200 次，中位数本身的波动约为标准差的 1/11，远小于程序之间的差别。
 
-原始输出如下。列的含义：`median`、`mean`、`stdev`、`min`、`p95` 是墙钟时间（ms）；`cpu` 是 perf 测得的总 CPU 时间（ms）；`vcsw`、`ivcsw` 是每次运行的自愿和非自愿上下文切换次数；`minflt` 是缺页次数；`vs_pipe` 是 `pipe_grep` 的中位数除以该程序的中位数。
+输出如下。列的含义：`median`、`mean`、`stdev`、`min`、`p95` 是墙钟时间（ms）；`cpu` 是 perf 测得的总 CPU 时间（ms）；`vcsw`、`ivcsw` 是每次运行的自愿和非自愿上下文切换次数；`minflt` 是缺页次数；`vs_pipe` 是 `pipe_grep` 的中位数除以该程序的中位数。
 
-```
-file: ANNA_KARENINA.txt (1985015 bytes)  word: zzzzqq  matches: 0  runs: 200  cpus: 32
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep      4.50     4.51    0.15     4.12     4.78 |    4.27 |    0.6    0.0     578 | 1.01x
-pipe_grep          4.52     4.54    0.18     4.17     4.86 |    4.65 |   32.3    0.1     123 | 1.00x
-uds_grep           4.41     4.42    0.18     4.10     4.70 |    4.53 |   12.1    0.0     123 | 1.03x
-shm_grep           2.38     2.41    0.13     2.19     2.64 |    4.94 |    5.8    0.0     631 | 1.90x
+![time demo](image-3.png)
 
-file: ANNA_KARENINA.txt (1985015 bytes)  word: world  matches: 134  runs: 200  cpus: 32
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep      4.72     4.74    0.15     4.41     5.00 |    4.41 |    0.5    0.1     578 | 1.00x
-pipe_grep          4.73     4.77    0.21     4.33     5.12 |    4.85 |   33.1    0.0     130 | 1.00x
-uds_grep           4.64     4.63    0.16     4.29     4.91 |    4.75 |   12.3    0.0     130 | 1.02x
-shm_grep           2.47     2.52    0.19     2.28     2.91 |    5.31 |    6.2    0.0     645 | 1.92x
-
-file: ANNA_KARENINA.txt (1985015 bytes)  word: the  matches: 13294  runs: 200  cpus: 32
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep      6.80     6.83    0.20     6.45     7.18 |    6.61 |    0.5    0.1    1104 | 1.11x
-pipe_grep          7.52     7.57    0.35     6.96     8.24 |    7.73 |   56.6    0.0     910 | 1.00x
-uds_grep           6.99     7.06    0.33     6.48     7.56 |    7.28 |   16.2    0.0     910 | 1.08x
-shm_grep           5.13     5.17    0.31     4.80     5.52 |    7.90 |    8.8    0.0    1513 | 1.47x
-```
-
-```
-file: big.txt (6488666 bytes)  word: zzzzqq  matches: 0  runs: 200  cpus: 32
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep     13.58    13.65    0.41    12.79    14.46 |   13.26 |    0.6    0.1    1678 | 0.98x
-pipe_grep         13.25    13.32    0.45    12.53    14.14 |   14.32 |  103.6    0.2     123 | 1.00x
-uds_grep          12.77    12.83    0.39    12.19    13.52 |   14.01 |   36.0    0.2     123 | 1.04x
-shm_grep           6.32     6.34    0.28     5.85     6.94 |   14.97 |    6.0    0.0    1800 | 2.10x
-
-file: big.txt (6488666 bytes)  word: world  matches: 355  runs: 200  cpus: 32
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep     13.96    14.01    0.39    13.23    14.74 |   13.68 |    0.7    0.1    1678 | 0.98x
-pipe_grep         13.69    13.73    0.44    12.79    14.49 |   14.54 |  104.3    0.2     141 | 1.00x
-uds_grep          13.24    13.34    0.48    12.63    14.08 |   14.39 |   36.8    0.2     141 | 1.03x
-shm_grep           6.54     6.62    0.43     6.08     7.31 |   15.55 |    6.8    0.0    1829 | 2.09x
-
-file: big.txt (6488666 bytes)  word: the  matches: 52067  runs: 200  cpus: 32
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep     22.73    22.84    0.66    22.02    23.78 |   22.18 |    0.7    0.2    3962 | 1.12x
-pipe_grep         25.41    25.63    1.01    23.96    27.42 |   26.20 |  216.5    0.1    3395 | 1.00x
-uds_grep          23.32    23.45    0.71    22.07    24.84 |   24.50 |   57.1    0.2    3395 | 1.09x
-shm_grep          17.68    17.73    0.49    16.84    18.79 |   25.40 |    9.0    0.0    5214 | 1.44x
-```
+截图与上表来自不同次运行，数值差异在正常波动范围内。
 
 从数据中可以读出：
 
