@@ -18,7 +18,10 @@ shm_grep: shm_grep.o common.o
 %.o: %.c common.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+test: all
+	python3 tests/run_tests.py
+
 clean:
 	rm -f $(PROGS) *.o
 
-.PHONY: all clean
+.PHONY: all test clean
