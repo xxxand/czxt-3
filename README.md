@@ -30,6 +30,7 @@
 | `bench/phases.py` | 耗时分解脚本：在源码副本里插入计时点，交付的源码不会被修改 |
 | `bench/baseline.c` | 单进程基线程序，仅供计时对照，由 `bench/bench.py` 自动编译 |
 | `REPORT.md` | 实验报告（设计、实验数据与分析、遇到的问题、IPC 与 map-reduce 的总结）；计时脚本的用法见其附录 |
+| `AI_USAGE.md` | AI 使用与分工说明 |
 | `ANNA_KARENINA.txt`, `big.txt` | 样例输入 |
 
 ## 2. 编译与使用
