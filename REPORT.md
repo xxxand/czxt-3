@@ -1,6 +1,6 @@
 # Lab03 实验报告：IPC 与 map-reduce
 
-**姓名**：贾筱雨　**学号**：24281099　**班级**：AI2401
+**姓名**：贾筱雨　**学号**：24281099
 
 ## 本报告与作业要求的对应关系
 
@@ -115,7 +115,7 @@ waitpid；排序；输出
 5. 匹配的行先攒在子进程的内存里，读到 EOF 后一次性写入 `from_child`。回写放在读完之后：父进程在发完文件之前不读取结果，如果子进程边读边回写，两个方向的管道写满后双方会互相等待（死锁）。
 6. 父进程读到 EOF 后 `waitpid`，然后排序输出。
 
-父进程在与子进程通信期间忽略 `SIGPIPE`：子进程提前退出时，`write` 返回 `EPIPE`，父进程报出明确的错误，而不是被信号悄悄杀死；排序输出前恢复默认处理，因此 `./pipe_grep ... | head` 的行为与普通命令一致。
+父进程在与子进程通信期间忽略 `SIGPIPE`：子进程提前退出时，`write` 返回 `EPIPE`，父进程报出明确的错误，而不是被信号悄悄杀死；排序输出前恢复默认处理，因此 `./build/pipe_grep ... | head` 的行为与普通命令一致。
 
 ### 2.4 `uds_grep`：Unix 域套接字
 
@@ -215,67 +215,68 @@ waitpid；直接从结果区排序并输出
 
 ### 3.1 构建与功能演示
 
-`make` 使用 `-Wall -Wextra`，没有任何警告：
+`make` 使用 `-Wall -Wextra`，没有任何警告，可执行文件和 `.o` 文件都生成在 `build/` 下：
 
 ```
-rm -f pipe_grep uds_grep shm_grep *.o
-gcc -std=gnu11 -O2 -g -Wall -Wextra -pthread -c -o pipe_grep.o pipe_grep.c
-gcc -std=gnu11 -O2 -g -Wall -Wextra -pthread -c -o common.o common.c
-gcc -pthread -o pipe_grep pipe_grep.o common.o
-gcc -std=gnu11 -O2 -g -Wall -Wextra -pthread -c -o uds_grep.o uds_grep.c
-gcc -pthread -o uds_grep uds_grep.o common.o
-gcc -std=gnu11 -O2 -g -Wall -Wextra -pthread -c -o shm_grep.o shm_grep.c
-gcc -pthread -o shm_grep shm_grep.o common.o -lrt
--rwxr-xr-x 46048 pipe_grep
--rwxr-xr-x 60936 shm_grep
--rwxr-xr-x 46496 uds_grep
+rm -rf build
+mkdir -p build
+gcc -std=gnu11 -O2 -g -Wall -Wextra -pthread -c -o build/pipe_grep.o pipe_grep.c
+gcc -std=gnu11 -O2 -g -Wall -Wextra -pthread -c -o build/common.o common.c
+gcc -pthread -o build/pipe_grep build/pipe_grep.o build/common.o
+gcc -std=gnu11 -O2 -g -Wall -Wextra -pthread -c -o build/uds_grep.o uds_grep.c
+gcc -pthread -o build/uds_grep build/uds_grep.o build/common.o
+gcc -std=gnu11 -O2 -g -Wall -Wextra -pthread -c -o build/shm_grep.o shm_grep.c
+gcc -pthread -o build/shm_grep build/shm_grep.o build/common.o -lrt
+-rwxr-xr-x 46048 build/pipe_grep
+-rwxr-xr-x 60936 build/shm_grep
+-rwxr-xr-x 46496 build/uds_grep
 ```
 
 终端演示（`$` 开头的行是输入的命令）：
 
 ```
 $ printf 'Hello World!\nHello worlds\nthe_world\nsay WORLD.\nworld2\nA world-wide web\nbefore: world\n' > /tmp/demo.txt
-$ ./pipe_grep /tmp/demo.txt world
+$ ./build/pipe_grep /tmp/demo.txt world
 A world-wide web
 before: world
 Hello World!
 say WORLD.
-$ for p in pipe_grep uds_grep shm_grep; do ./$p /tmp/demo.txt world | md5sum; done
+$ for p in pipe_grep uds_grep shm_grep; do ./build/$p /tmp/demo.txt world | md5sum; done
 6582d36b0253bcbe24535af911f70ee0  -
 6582d36b0253bcbe24535af911f70ee0  -
 6582d36b0253bcbe24535af911f70ee0  -
 
-$ ./pipe_grep ANNA_KARENINA.txt world | head -4
+$ ./build/pipe_grep ANNA_KARENINA.txt world | head -4
   "He that is married careth for the things of the world, how he may
   "I know more of the world than you do," she said. I know how men
   "I lodge complaints? Not for anything in the world There's so much
   "If the world disapproves, I don't care," said Vronsky; "but if my
-$ for p in pipe_grep uds_grep shm_grep; do ./$p ANNA_KARENINA.txt world | wc -l; done
+$ for p in pipe_grep uds_grep shm_grep; do ./build/$p ANNA_KARENINA.txt world | wc -l; done
 134
 134
 134
-$ ./uds_grep big.txt Holmes | wc -l
+$ ./build/uds_grep big.txt Holmes | wc -l
 446
-$ ./shm_grep big.txt the | wc -l
+$ ./build/shm_grep big.txt the | wc -l
 52067
 
-$ diff <(./shm_grep big.txt the | LC_ALL=C sort) <(grep -iw the big.txt | LC_ALL=C sort) && echo 与 grep -iw 的结果一致
+$ diff <(./build/shm_grep big.txt the | LC_ALL=C sort) <(grep -iw the big.txt | LC_ALL=C sort) && echo 与 grep -iw 的结果一致
 与 grep -iw 的结果一致
 
-$ ./pipe_grep; echo "退出码=$?"
-usage: ./pipe_grep <file> <word>
+$ ./build/pipe_grep; echo "退出码=$?"
+usage: ./build/pipe_grep <file> <word>
   print the lines of <file> that contain <word>, in alphabetical order
 退出码=2
-$ ./pipe_grep /nonexistent x; echo "退出码=$?"
+$ ./build/pipe_grep /nonexistent x; echo "退出码=$?"
 pipe_grep: cannot open '/nonexistent': No such file or directory
 退出码=1
-$ ./uds_grep . x; echo "退出码=$?"
+$ ./build/uds_grep . x; echo "退出码=$?"
 uds_grep: read: Is a directory
 退出码=1
-$ ./shm_grep . x; echo "退出码=$?"
+$ ./build/shm_grep . x; echo "退出码=$?"
 shm_grep: '.' is not a regular file
 退出码=1
-$ ./shm_grep /tmp/demo.txt nomatch; echo "无匹配时退出码=$?"
+$ ./build/shm_grep /tmp/demo.txt nomatch; echo "无匹配时退出码=$?"
 无匹配时退出码=0
 ```
 
@@ -965,7 +966,7 @@ Apache Hadoop 是一个开源的分布式计算框架，用简单的编程模型
 所有命令在项目目录下执行。大文件放在 `/tmp`（tmpfs）里，实验结束后可以删除。
 
 ```bash
-make                                   # 编译
+make                                   # 编译（产物在 build/ 下）
 make test                              # 31 项自动化测试
 
 # 4.2 端到端耗时

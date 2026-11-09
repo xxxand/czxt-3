@@ -26,6 +26,7 @@ import tempfile
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BIN_DIR = os.path.join(ROOT, "build")
 PROGS = ["pipe_grep", "uds_grep", "shm_grep"]
 DEVNULL = [(os.POSIX_SPAWN_OPEN, 1, os.devnull, os.O_WRONLY, 0),
            (os.POSIX_SPAWN_OPEN, 2, os.devnull, os.O_WRONLY, 0)]
@@ -97,7 +98,7 @@ def main():
     use_perf = args.cpu_runs > 0 and shutil.which("perf") is not None and perf_cpu_ms(["true"]) is not None
 
     with tempfile.TemporaryDirectory() as tmp:
-        progs = {p: os.path.join(ROOT, p) for p in PROGS}
+        progs = {p: os.path.join(BIN_DIR, p) for p in PROGS}
         if not args.no_baseline:
             progs = {"baseline_grep": build_baseline(tmp), **progs}
         names = list(progs)

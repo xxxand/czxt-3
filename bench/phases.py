@@ -22,6 +22,7 @@ import tempfile
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BIN_DIR = os.path.join(ROOT, "build")
 
 TIMING_H = r"""#ifndef TIMING_H
 #define TIMING_H
@@ -270,7 +271,7 @@ def main():
 
         for word in args.words:
             if not args.no_match:
-                want = hashlib.md5(subprocess.run([os.path.join(ROOT, "pipe_grep"), args.file, word],
+                want = hashlib.md5(subprocess.run([os.path.join(BIN_DIR, "pipe_grep"), args.file, word],
                                                   capture_output=True).stdout).hexdigest()
                 for n in order:
                     out = subprocess.run([progs[n][1], args.file, word], capture_output=True).stdout

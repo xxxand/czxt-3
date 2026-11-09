@@ -1,8 +1,5 @@
 # 编译产物
-/pipe_grep
-/uds_grep
-/shm_grep
-*.o
+/build/
 
 # Python 缓存
 __pycache__/

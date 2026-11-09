@@ -19,7 +19,8 @@
 
 | 文件 | 说明 |
 |---|---|
-| `Makefile` | 编译、测试、清理 |
+| `Makefile` | 编译、测试、清理；产物输出到 `build/` |
+| `build/` | 编译产物（可执行文件和 `.o` 文件，由 `make` 生成） |
 | `common.c`, `common.h` | 三个程序共用的代码 |
 | `pipe_grep.c` | 子项目 1：管道 |
 | `uds_grep.c` | 子项目 2：Unix 域套接字 |
@@ -40,26 +41,26 @@ Linux、支持 `-std=gnu11` 的 gcc、make。`make test` 另需 python3 和 GNU 
 ### 编译
 
 ```bash
-make          # 生成 pipe_grep、uds_grep、shm_grep
+make          # 在 build/ 下生成 pipe_grep、uds_grep、shm_grep
 make test     # 运行测试（可选）
-make clean    # 删除可执行文件和 .o 文件
+make clean    # 删除 build 目录
 ```
 
-编译和链接都带 `-pthread`；`shm_grep` 还链接了 `-lrt`（glibc 2.34 之前，`shm_open` 位于 librt）。
+可执行文件和 `.o` 文件都生成在 `build/` 下。编译和链接都带 `-pthread`；`shm_grep` 还链接了 `-lrt`（glibc 2.34 之前，`shm_open` 位于 librt）。
 
 ### 运行
 
 ```bash
-./pipe_grep <文件路径> <单词>
-./uds_grep  <文件路径> <单词>
-./shm_grep  <文件路径> <单词>
+./build/pipe_grep <文件路径> <单词>
+./build/uds_grep  <文件路径> <单词>
+./build/shm_grep  <文件路径> <单词>
 ```
 
 三个程序的参数和输出完全相同。例如：
 
 ```bash
 printf 'Hello World!\nHello worlds\nthe_world\nsay WORLD.\nworld2\nA world-wide web\nbefore: world\n' > /tmp/demo.txt
-./pipe_grep /tmp/demo.txt world
+./build/pipe_grep /tmp/demo.txt world
 ```
 
 输出如下。`Hello worlds`、`the_world`、`world2` 中不含单词 `world`，所以不输出：
@@ -74,14 +75,14 @@ say WORLD.
 样例文件：
 
 ```bash
-./pipe_grep ANNA_KARENINA.txt world | wc -l     # 输出 134
-./uds_grep big.txt Holmes | wc -l               # 输出 446
+./build/pipe_grep ANNA_KARENINA.txt world | wc -l     # 输出 134
+./build/uds_grep big.txt Holmes | wc -l               # 输出 446
 ```
 
 与 `grep` 对照（比较行的集合，不比较顺序）：
 
 ```bash
-diff <(./shm_grep big.txt the | LC_ALL=C sort) <(grep -iw the big.txt | LC_ALL=C sort) && echo 一致
+diff <(./build/shm_grep big.txt the | LC_ALL=C sort) <(grep -iw the big.txt | LC_ALL=C sort) && echo 一致
 ```
 
 ### 匹配、排序与输出约定
@@ -119,7 +120,7 @@ waitpid；排序；输出
 4. 子进程分块读入，每次只匹配已经收齐的完整行；末尾不完整的半行留在缓冲区，和下一块拼起来。匹配的行先攒在内存里，读到 EOF 后一次性写入 `from_child`。回写放在读完之后：父进程在发完文件之前不读取结果，此时若子进程回写，两个方向的管道写满后双方会互相等待（死锁）。
 5. 父进程读到 EOF 后 `waitpid`，排序并输出。
 
-父进程在与子进程通信期间忽略 `SIGPIPE`，子进程提前退出时 `write` 返回 `EPIPE`，父进程报出明确的错误；排序输出前恢复默认处理，因此 `./pipe_grep ... | head` 的行为与普通命令一致。
+父进程在与子进程通信期间忽略 `SIGPIPE`，子进程提前退出时 `write` 返回 `EPIPE`，父进程报出明确的错误；排序输出前恢复默认处理，因此 `./build/pipe_grep ... | head` 的行为与普通命令一致。
 
 ### 3.3 `uds_grep`：Unix 域套接字
 

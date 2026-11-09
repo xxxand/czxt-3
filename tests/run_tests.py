@@ -2,7 +2,7 @@
 """Lab03 自动测试: 把三个程序的输出与 Python 参考实现逐字节比较。
 
 用法: python3 tests/run_tests.py        (make test 会调用)
-环境变量 LAB03_BIN_DIR 可指定可执行文件所在目录, 默认是项目根目录。
+环境变量 LAB03_BIN_DIR 可指定可执行文件所在目录, 默认是项目根目录下的 build/。
 """
 import glob
 import os
@@ -13,7 +13,7 @@ import sys
 import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BIN_DIR = os.environ.get("LAB03_BIN_DIR", ROOT)
+BIN_DIR = os.environ.get("LAB03_BIN_DIR", os.path.join(ROOT, "build"))
 PROGS = ["pipe_grep", "uds_grep", "shm_grep"]
 TIMEOUT = 60
 
