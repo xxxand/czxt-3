@@ -934,21 +934,11 @@ Apache Hadoop 是一个开源的分布式计算框架，用简单的编程模型
 
 ## 9. 参考资料
 
-**本报告引用的资料**
-
 1. Linux man-pages：`pipe(7)`、`fifo(7)`、`unix(7)`、`socketpair(2)`、`shm_overview(7)`、`sem_overview(7)`、`mq_overview(7)`、`sysvipc(7)`、`signal(7)`、`pthreads(7)`、`futex(7)`、`eventfd(2)`、`memfd_create(2)`、`splice(2)`、`process_vm_readv(2)`、`prctl(2)`。<https://man7.org/linux/man-pages/>
 2. Michael Kerrisk. *An introduction to Linux IPC*. linux.conf.au 2013. <https://man7.org/conf/lca2013/IPC_Overview-LCA-2013-printable.pdf>（即讲义列出的 Kerrisk 2013 年的资料；讲义中的 citel.bjtu.edu.cn 链接已无法访问）
 3. Jeffrey Dean, Sanjay Ghemawat. *MapReduce: Simplified Data Processing on Large Clusters*. OSDI'04, pp. 137–150. <https://research.google/pubs/mapreduce-simplified-data-processing-on-large-clusters/>；PDF：<https://static.googleusercontent.com/media/research.google.com/en//archive/mapreduce-osdi04.pdf>（讲义中的链接少一个斜杠，会返回 404）
 4. Apache Hadoop 项目主页. <https://hadoop.apache.org/>
 5. Wikipedia: Apache Hadoop（History 一节）. <https://en.wikipedia.org/wiki/Apache_Hadoop>
-
-**讲义推荐的其他资料**（链接于 2026-11-09 检查可访问）
-
-6. A simple makefile tutorial. Colby College. <https://cs.colby.edu/maxwell/courses/tutorials/maketutor/>（讲义中的 http 链接会重定向到此地址）
-7. Beej's Guide to Unix IPC. <https://beej.us/guide/bgipc/>
-8. Goldt, Meer, Burkett, Welsh. *Linux Interprocess Communications*. 1995. <https://tldp.org/LDP/lpg/node7.html>
-9. Blaise Barney. *POSIX Threads Programming*. <https://hpc-tutorials.llnl.gov/posix/>（讲义中的 computing.llnl.gov 链接已重定向到这里）
-10. Beej's Quick Guide to GDB. <https://beej.us/guide/bggdb/>
 
 ## 10. 建议与意见
 
@@ -956,12 +946,11 @@ Apache Hadoop 是一个开源的分布式计算框架，用简单的编程模型
 2. **样例文件偏小。** 在 2 MB 和 6.5 MB 的文件上，整个程序只运行 2–25 ms，进程启动等固定开销占比明显，三种 IPC 的差别不易看清。建议增加数百 MB 的输入，或者要求测量不同规模下的耗时。本报告 4.6 节显示，随着文件放大 64 倍，共享内存版本相对管道版本的优势从 2.10 倍增加到 2.38 倍。
 3. **提醒计时的陷阱。** 例如 GNU grep 在输出为 `/dev/null` 时会提前退出，不能直接当作基线（5.8 节）；几毫秒量级的程序必须多次重复并取中位数；`rusage` 的 CPU 时间可能对多线程的短命进程严重偏小，应改用 `perf stat` 之类的工具。
 4. **在实验指导里加入 ASan、UBSan、TSan 和 valgrind 的用法。** 本次的 `SIGCHLD` 处理函数缺陷（5.6 节）在普通测试里完全看不出来，是 LeakSanitizer 把它暴露出来的。多进程、多线程和信号相关的程序特别需要这类工具。
-5. **更新讲义里的参考链接。** 讲义列出的 7 个链接里，BJTU 的 IPC 概述 PDF 已无法访问，Google 托管的 MapReduce 论文链接返回 404（正确地址是 `en//archive`，多一个斜杠），LLNL 的 pthreads 教程已迁移到 hpc-tutorials.llnl.gov，另有几个 http 链接会重定向到 https。替换地址见第 9 章。
-6. **把环境要求写成接口要求。** 讲义推荐的 Ubuntu 16.04/18.04 已经比较旧，本实验在 Ubuntu 26.04（glibc 2.43）上完成，没有遇到兼容问题。建议改为“C11 加上 POSIX 线程、共享内存和信号量接口”，并提醒旧版 glibc 上使用 `shm_open` 需要链接 `-lrt`。
-7. **map-reduce 部分可以加一个真正需要 reduce 的练习。** 对 grep 来说 reduce 是恒等函数，很难体会 reduce 的作用。可以增加词频统计或 top-k 之类的扩展题，或者要求把排序下放给 mapper 并由 reducer 归并有序的片段：4.3 节显示，结果很多时，最后的单线程排序占了总耗时的 42%–76%，是主要的串行瓶颈。
-8. **一点体会。** 并行带来的收益主要来自把计算分摊到多个核上，而不是 IPC 机制本身；IPC 的选择应更多地取决于复杂度、可靠性和扩展性。这个结论是靠把耗时拆开、做对照实验才看清的，单看总耗时很容易得出“共享内存因为零拷贝所以快”的错误印象。
+5. **把环境要求写成接口要求。** 讲义推荐的 Ubuntu 16.04/18.04 已经比较旧，本实验在 Ubuntu 26.04（glibc 2.43）上完成，没有遇到兼容问题。建议改为“C11 加上 POSIX 线程、共享内存和信号量接口”，并提醒旧版 glibc 上使用 `shm_open` 需要链接 `-lrt`。
+6. **map-reduce 部分可以加一个真正需要 reduce 的练习。** 对 grep 来说 reduce 是恒等函数，很难体会 reduce 的作用。可以增加词频统计或 top-k 之类的扩展题，或者要求把排序下放给 mapper 并由 reducer 归并有序的片段：4.3 节显示，结果很多时，最后的单线程排序占了总耗时的 42%–76%，是主要的串行瓶颈。
+7. **一点体会。** 并行带来的收益主要来自把计算分摊到多个核上，而不是 IPC 机制本身；IPC 的选择应更多地取决于复杂度、可靠性和扩展性。这个结论是靠把耗时拆开、做对照实验才看清的，单看总耗时很容易得出“共享内存因为零拷贝所以快”的错误印象。
 
-## 附录 A：复现实验的命令
+## 附录：复现实验的命令
 
 所有命令在项目目录下执行。大文件放在 `/tmp`（tmpfs）里，实验结束后可以删除。
 
@@ -1000,109 +989,3 @@ python3 bench/bench.py --runs 100 --warmup 5 --cpu-runs 10 --cpus 0-3 big.txt wo
 ```
 
 `bench/bench.py` 不带 `--cpu-runs` 参数时默认用 `perf` 测 20 次 CPU 时间；系统里没有 `perf` 时该列显示 `n/a`。
-
-## 附录 B：补充的原始数据
-
-规模扩展，`big_x4.txt`（25,954,664 字节）：
-
-```
-file: big_x4.txt (25954664 bytes)  word: zzzzqq  matches: 0  runs: 50  cpus: 32
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep     54.36    54.48    0.68    53.21    55.82 |   54.21 |    0.7    0.1    6430 | 0.94x
-pipe_grep         51.30    51.42    0.89    49.83    53.00 |   56.61 |  410.6    0.2     123 | 1.00x
-uds_grep          49.28    49.24    0.95    47.41    50.98 |   54.62 |  134.6    0.2     124 | 1.04x
-shm_grep          22.85    23.45    1.42    22.14    26.78 |   60.59 |    6.5    0.6    6849 | 2.25x
-
-file: big_x4.txt (25954664 bytes)  word: world  matches: 1420  runs: 50  cpus: 32
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep     56.62    56.76    1.01    54.87    58.25 |   55.74 |    0.7    0.5    6465 | 0.94x
-pipe_grep         53.50    53.68    1.20    51.66    56.09 |   58.04 |  412.8    0.2     230 | 1.00x
-uds_grep          51.55    51.65    0.85    50.15    53.23 |   56.73 |  135.3    0.2     230 | 1.04x
-shm_grep          23.77    24.10    1.19    22.56    27.12 |   60.66 |    7.8    0.5    6952 | 2.25x
-
-file: big_x4.txt (25954664 bytes)  word: the  matches: 208268  runs: 50  cpus: 32
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep    109.11   109.56    2.31   105.86   113.39 |  106.11 |    0.8    0.4   15562 | 1.08x
-pipe_grep        117.55   118.17    2.24   114.23   123.31 |  119.45 |  872.6    0.2   13057 | 1.00x
-uds_grep         108.91   109.22    1.70   106.15   112.48 |  115.34 |  192.8    0.2   13057 | 1.08x
-shm_grep          87.34    88.02    1.85    84.89    91.90 |  118.29 |   16.1    0.4   20100 | 1.35x
-```
-
-`big_x16.txt`（103,818,656 字节）：
-
-```
-file: big_x16.txt (103818656 bytes)  word: zzzzqq  matches: 0  runs: 30  cpus: 32
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep    219.83   220.25    2.03   217.61   224.32 |  216.75 |    0.8    0.6   25440 | 0.93x
-pipe_grep        205.45   206.51    4.03   202.48   216.26 |  224.23 | 1638.1    0.5     123 | 1.00x
-uds_grep         197.59   197.38    2.76   193.50   201.81 |  220.91 |  529.7    0.6     123 | 1.04x
-shm_grep          89.48    92.88    7.14    87.37   106.62 |  259.41 |    7.2    0.7   27047 | 2.30x
-
-file: big_x16.txt (103818656 bytes)  word: world  matches: 5680  runs: 30  cpus: 32
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep    226.71   226.97    1.36   224.35   229.77 |  224.35 |    0.7    0.9   25682 | 0.94x
-pipe_grep        213.61   214.18    3.33   209.30   220.45 |  232.14 | 1651.2    1.0     530 | 1.00x
-uds_grep         205.04   205.85    2.37   202.37   211.50 |  228.93 |  531.2    0.6     530 | 1.04x
-shm_grep          91.36    95.52    7.55    89.59   110.24 |  253.68 |    8.5    0.9   27452 | 2.34x
-
-file: big_x16.txt (103818656 bytes)  word: the  matches: 833072  runs: 30  cpus: 32
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep    518.82   519.98    5.14   512.98   530.56 |  516.62 |    0.6    1.7   61966 | 1.07x
-pipe_grep        554.06   555.38    5.04   547.26   564.40 |  569.43 | 3500.3    1.6   51707 | 1.00x
-uds_grep         517.33   519.30    8.30   512.02   525.98 |  547.88 |  722.0    1.4   51707 | 1.07x
-shm_grep         426.62   427.41    4.73   418.36   438.72 |  546.96 |   13.7    2.1   79650 | 1.30x
-```
-
-`big_x64.txt`（415,274,624 字节）：
-
-```
-file: big_x64.txt (415274624 bytes)  word: zzzzqq  matches: 0  runs: 12  cpus: 32
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep    863.40   863.47    5.18   856.57   872.91 |  857.83 |    0.5    3.3  101479 | 0.95x
-pipe_grep        823.73   825.01    9.54   809.28   843.09 |  898.44 | 6549.8    1.8     123 | 1.00x
-uds_grep         794.80   796.58   12.55   778.94   820.81 |  875.26 | 2105.1    1.8     123 | 1.04x
-shm_grep         346.64   362.94   28.95   336.69   409.62 |  932.11 |    6.1    1.7  107839 | 2.38x
-
-file: big_x64.txt (415274624 bytes)  word: world  matches: 22720  runs: 12  cpus: 32
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep    896.85   897.61    5.62   889.71   908.59 |  889.37 |    0.8    2.8  102575 | 0.96x
-pipe_grep        858.06   858.52    3.64   850.79   864.06 |  917.94 | 6606.3    2.9    1728 | 1.00x
-uds_grep         821.52   823.55    5.62   817.59   837.28 |  915.76 | 2113.7    2.3    1727 | 1.04x
-shm_grep         357.68   363.45   12.23   353.16   391.54 |  986.88 |    8.4    2.6  109555 | 2.40x
-```
-
-只给 1 个 CPU（`--cpus 0`）：
-
-```
-file: big.txt (6488666 bytes)  word: world  matches: 355  runs: 100  cpus: 1
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep     13.85    13.91    0.34    13.29    14.49 |   13.59 |    1.0    1.7    1678 | 0.97x
-pipe_grep         13.43    13.51    0.29    13.11    14.04 |   13.22 |  107.6  105.0     141 | 1.00x
-uds_grep          13.34    13.41    0.27    13.05    13.93 |   13.12 |   35.1   33.5     141 | 1.01x
-shm_grep          14.78    14.84    0.40    14.24    15.51 |   14.38 |    5.0    2.9    1827 | 0.91x
-
-file: big.txt (6488666 bytes)  word: the  matches: 52067  runs: 100  cpus: 1
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep     22.54    22.66    0.58    21.87    23.28 |   22.56 |    1.0    2.2    3962 | 1.02x
-pipe_grep         23.05    23.10    0.42    22.29    23.90 |   23.28 |  166.9  157.8    3395 | 1.00x
-uds_grep          22.89    22.96    0.39    22.26    23.56 |   22.81 |   52.0   46.5    3395 | 1.01x
-shm_grep          24.40    24.51    0.38    23.85    25.46 |   24.75 |    5.1    3.1    5144 | 0.94x
-```
-
-只给 4 个 CPU（`--cpus 0-3`）：
-
-```
-file: big.txt (6488666 bytes)  word: world  matches: 355  runs: 100  cpus: 4
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep     13.68    13.75    0.47    12.91    14.56 |   13.70 |    0.7    0.8    1678 | 1.00x
-pipe_grep         13.62    13.67    0.42    12.95    14.51 |   14.79 |  103.8    0.1     141 | 1.00x
-uds_grep          13.03    13.12    0.40    12.34    13.83 |   14.23 |   36.4    0.1     141 | 1.05x
-shm_grep           6.34     6.40    0.29     5.90     6.86 |   15.30 |    6.6    0.2    1829 | 2.15x
-
-file: big.txt (6488666 bytes)  word: the  matches: 52067  runs: 100  cpus: 4
-program          median     mean   stdev      min      p95 |     cpu |   vcsw  ivcsw  minflt | vs_pipe
-baseline_grep     22.49    22.56    0.57    21.46    23.68 |   21.93 |    0.6    0.6    3962 | 1.14x
-pipe_grep         25.53    25.51    0.73    23.89    26.62 |   26.27 |  216.4    0.3    3395 | 1.00x
-uds_grep          23.50    23.55    0.78    22.16    24.88 |   24.64 |   55.7    0.3    3395 | 1.09x
-shm_grep          17.78    17.82    0.53    16.83    18.71 |   25.00 |    8.7    0.7    5214 | 1.44x
-```
