@@ -1,0 +1,8 @@
+# 编译产物
+/pipe_grep
+/uds_grep
+/shm_grep
+*.o
+
+# Python 缓存
+__pycache__/
