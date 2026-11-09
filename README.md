@@ -25,6 +25,9 @@
 | `uds_grep.c` | 子项目 2：Unix 域套接字 |
 | `shm_grep.c` | 子项目 3：共享内存 + map-reduce |
 | `tests/run_tests.py` | 测试脚本 |
+| `bench/bench.py` | 端到端计时脚本：墙钟时间、CPU 时间、上下文切换、缺页次数的统计 |
+| `bench/phases.py` | 耗时分解脚本：在源码副本里插入计时点，交付的源码不会被修改 |
+| `bench/baseline.c` | 单进程基线程序，仅供计时对照，由 `bench/bench.py` 自动编译 |
 | `ANNA_KARENINA.txt`, `big.txt` | 样例输入 |
 
 ## 2. 编译与使用
